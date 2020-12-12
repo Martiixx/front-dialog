@@ -45,7 +45,7 @@ export default {
       messageList: [
       ], // the list of the messages to show, can be paginated and adjusted dynamically
       newMessagesCount: 0,
-      isChatOpen: false, // to determine whether the chat window should be open or closed
+      isChatOpen: true, // to determine whether the chat window should be open or closed
       showTypingIndicator: '', // when set to a value matching the participant.id it shows the typing indicator for the specific user
       colors: {
         header: {
@@ -71,14 +71,13 @@ export default {
           text: '#565867'
         }
       }, // specifies the color scheme for the component
-      alwaysScrollToBottom: false, // when set to true always scrolls the chat to the bottom when new events are in (new message, user starts typing...)
+      alwaysScrollToBottom: true, // when set to true always scrolls the chat to the bottom when new events are in (new message, user starts typing...)
       messageStyling: true // enables *bold* /emph/ _underline_ and such (more info at github.com/mattezza/msgdown)
     }
   },
   methods: {
     sendMessage (text) {
       if (text.length > 0) {
-        axios.get()
         this.newMessagesCount = this.isChatOpen ? this.newMessagesCount : this.newMessagesCount + 1
         this.onMessageWasSent({ author: 'support', type: 'text', data: { text } })
       }
@@ -86,6 +85,26 @@ export default {
     onMessageWasSent (message) {
       // called when the user sends a message
       this.messageList = [ ...this.messageList, message ]
+      console.log(message.data.text);
+      axios.get('http://localhost:8080/start-dialog', { params: message.data.text }).then(response => {
+        console.log(response.data);
+        if (response.data.file !== undefined) {
+          this.messageList = [ ...this.messageList, {author: 'bankAgent',
+            type: 'file',
+            isEdited: false,
+            data: {
+              file: {
+                name: 'file.mp3',
+                url: 'https:123.rf/file.mp3'
+              }
+            } } ]
+        } else {
+          let text = response.data.message;
+          this.messageList = [ ...this.messageList, { author: 'bankAgent', type: 'text', data: { text }}]
+        }
+      }).catch(error => {
+        console.log(error)
+      })
     },
     openChat () {
       // called when the user clicks on the fab button to open the chat
@@ -101,7 +120,6 @@ export default {
       // leverage pagination for loading another page of messages
     },
     handleOnType () {
-      console.log('Emit typing event')
     },
     editMessage(message){
       const m = this.messageList.find(m=>m.id === message.id);
